@@ -1,5 +1,7 @@
 
 import pytorch_lightning
+from pytorch_lightning.callbacks import ModelCheckpoint
+
 from monai.utils import set_determinism
 from monai.transforms import (
     AsDiscrete,
@@ -26,10 +28,11 @@ import matplotlib.pyplot as plt
 
 import os
 import glob
+from datetime import datetime
 
 
-PATCH_SIZE = 48
-DEVICE = "cpu"
+PATCH_SIZE = 96
+DEVICE = "cuda" #"cpu"
 
 class Net(pytorch_lightning.LightningModule):
     def __init__(self, data_dir):
@@ -188,6 +191,7 @@ class Net(pytorch_lightning.LightningModule):
         self.dice_metric(y_pred=outputs, y=labels)
         d = {"val_loss": loss, "val_number": len(outputs)}
         self.validation_step_outputs.append(d)
+        self.log("val_loss", loss)
         return d
 
     def on_validation_epoch_end(self):
@@ -202,6 +206,8 @@ class Net(pytorch_lightning.LightningModule):
             "val_dice": mean_val_dice,
             "val_loss": mean_val_loss,
         }
+        self.log("val_dice", mean_val_dice)
+
         if mean_val_dice > self.best_val_dice:
             self.best_val_dice = mean_val_dice
             self.best_val_epoch = self.current_epoch
@@ -218,26 +224,35 @@ class Net(pytorch_lightning.LightningModule):
 def main():
     print_config()
 
-    root_dir = "/Users/amithkamath/data/MSD"
+    eventid = datetime.now().strftime('-%Y%m-%d%H-%M%S')
+
+    root_dir = "/home/akamath/data/MSD"
     print(root_dir)
 
-    data_dir = os.path.join(root_dir, "Task02_Heart")
+    data_dir = os.path.join(root_dir, "Task09_Spleen")
 
     # initialise the LightningModule
     net = Net(data_dir)
 
     # set up loggers and checkpoints
-    log_dir = os.path.join(root_dir, "logs")
+    curr_dir = os.path.dirname(os.path.realpath(__file__))
+    log_dir = os.path.join(curr_dir, "logs" + eventid)
     tb_logger = pytorch_lightning.loggers.TensorBoardLogger(save_dir=log_dir)
+    checkpoint_callback = ModelCheckpoint(dirpath=log_dir,
+                                          monitor="val_loss",
+                                          save_top_k=3,
+                                          filename="model-{epoch:02d}-{val_loss:.2f}-{val_dice:.2f}",
+                                          )
 
     # initialise Lightning's trainer.
     trainer = pytorch_lightning.Trainer(
         accelerator=DEVICE,
-        max_epochs=600,
+        max_epochs=500,
         logger=tb_logger,
         enable_checkpointing=True,
         num_sanity_val_steps=1,
         log_every_n_steps=16,
+        callbacks=checkpoint_callback,
     )
 
     # train
@@ -245,6 +260,7 @@ def main():
 
     print(f"train completed, best_metric: {net.best_val_dice:.4f} " f"at epoch {net.best_val_epoch}")
 
+    """
     net.eval()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     net.to(device)
@@ -254,7 +270,7 @@ def main():
             sw_batch_size = 4
             val_outputs = sliding_window_inference(val_data["image"].to(device), roi_size, sw_batch_size, net)
             # plot the slice [:, :, 80]
-            plt.figure("check", (18, 6))
+            plt.figure()
             plt.subplot(1, 3, 1)
             plt.title(f"image {i}")
             plt.imshow(val_data["image"][0, 0, :, :, PATCH_SIZE], cmap="gray")
@@ -265,6 +281,7 @@ def main():
             plt.title(f"output {i}")
             plt.imshow(torch.argmax(val_outputs, dim=1).detach().cpu()[0, :, :, PATCH_SIZE])
             plt.show()
+    """
 
 if __name__ == "__main__":
     main()
