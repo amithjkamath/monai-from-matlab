@@ -11,7 +11,6 @@ from monai.transforms import (
     AsDiscrete,
     EnsureChannelFirst,
     Compose,
-    CropForeground,
     LoadImage,
     Orientation,
     ScaleIntensity,
@@ -47,22 +46,22 @@ def create_model(model_path):
     return model
 
 
-def get_transform():
+def get_transform(spacing_mode):
     test_transform = Compose(
         [
             LoadImage(),
             EnsureChannelFirst(),
             Orientation(axcodes="RAS"),
-            Spacing(pixdim=(2.0, 2.0, 2.0), mode="bilinear"),
+            Spacing(pixdim=(2.0, 2.0, 2.0), mode=spacing_mode),
             ScaleIntensity(minv=0.0, maxv=1.0),
-            CropForeground(),
+            #CropForeground(), # Doing this separately breaks things.
         ]
     )
     return test_transform
 
 
 def inference(model, image_path):
-    transform = get_transform()
+    transform = get_transform("bilinear")
     input = transform(image_path)
 
     model.eval()
@@ -85,19 +84,18 @@ def save_model(model_path, output_path):
     # Trace a module
     module = torch.jit.trace(model, example_forward_input)
 
-    # Save to file
-    torch.jit.save(module, os.path.join(output_path, 'msd_heart_model.pt'))
+    # Save to file: this is needed for loading into
+    # Deep Network Designer, in Method #2.
+    torch.jit.save(module, os.path.join(output_path, 'models/msd_heart_model.pt'))
 
 
 def save_data(array, output_filename):
     writer = NibabelWriter()
     writer.set_data_array(array, channel_dim=0) # remove batch dim.
-    # writer.set_metadata({"affine": torch.eye(4), "original_affine": torch.eye(4)})
     writer.write(output_filename, verbose=True)
 
 
 def test_model(model_path, image_path, output_path):
-    
     model = create_model(model_path)
     seg = inference(model, image_path)
 
@@ -109,16 +107,17 @@ if __name__ == "__main__":
     repo_root = "/Users/amithkamath/repo/monai-from-matlab/"
 
     # Save model to load with MATLAB.
-    model_path = os.path.join(repo_root, "logs-202406-1610-5919/model-epoch=99-val_loss=0.0607-val_dice=0.8865.ckpt")
+    model_path = os.path.join(repo_root, "models/trained_msd_heart_model.ckpt")
     save_model(model_path, repo_root)
 
     # Save image and ground truth in transformed format for evaluation.
     input_file = os.path.join(repo_root, "data/la_030.nii.gz")
-    transform = get_transform()
+    transform = get_transform("bilinear")
     tformed_image = transform(input_file)
     save_data(tformed_image, os.path.join(repo_root, "data/tformed_la_030.nii.gz"))
 
     label_file = os.path.join(repo_root, "data/label_la_030.nii.gz")
+    transform = get_transform("nearest")
     tformed_label = transform(label_file)
     save_data(tformed_label, os.path.join(repo_root, "data/tformed_label_la_030.nii.gz"))
 

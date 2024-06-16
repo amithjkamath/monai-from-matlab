@@ -1,6 +1,8 @@
 import pytorch_lightning
 from pytorch_lightning.callbacks import ModelCheckpoint
 
+import torch
+
 from monai.utils import set_determinism
 from monai.transforms import (
     AsDiscrete,
@@ -21,8 +23,6 @@ from monai.losses import DiceLoss
 from monai.inferers import sliding_window_inference
 from monai.data import CacheDataset, list_data_collate, decollate_batch, DataLoader
 from monai.config import print_config
-
-import torch
 
 import os
 import glob
@@ -101,14 +101,6 @@ class Net(pytorch_lightning.LightningModule):
                     image_key="image",
                     image_threshold=0,
                 ),
-                # user can also add other random transforms
-                #                 RandAffined(
-                #                     keys=['image', 'label'],
-                #                     mode=('bilinear', 'nearest'),
-                #                     prob=1.0,
-                #                     spatial_size=(96, 96, 96),
-                #                     rotate_range=(0, 0, np.pi/15),
-                #                     scale_range=(0.1, 0.1, 0.1)),
             ]
         )
         val_transforms = Compose(

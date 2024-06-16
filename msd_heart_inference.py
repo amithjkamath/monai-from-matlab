@@ -1,5 +1,6 @@
-
 import pytorch_lightning
+
+import torch
 
 from monai.utils import set_determinism
 from monai.transforms import (
@@ -19,8 +20,6 @@ from monai.metrics import DiceMetric
 from monai.losses import DiceLoss
 from monai.inferers import sliding_window_inference
 from monai.data import CacheDataset, list_data_collate, decollate_batch, DataLoader
-
-import torch
 
 import os
 import glob
@@ -122,7 +121,7 @@ if __name__ == "__main__":
 
     repo_root = "/Users/amithkamath/repo/monai-from-matlab/"
     data_root = "/Users/amithkamath/data/MSD/Task02_Heart"
-    saved_path = os.path.join(repo_root, "logs-202406-1610-5919/model-epoch=99-val_loss=0.0607-val_dice=0.8865.ckpt")
+    saved_path = os.path.join(repo_root, "models/trained_msd_heart_model.ckpt")
 
     inference(saved_path, data_root)
     # [{'test_dice': metatensor([[0.9011]]), 'test_number': 1},
