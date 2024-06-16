@@ -47,8 +47,7 @@ def create_model(model_path):
     return model
 
 
-def inference(model, image_path):
-
+def get_transform():
     test_transform = Compose(
         [
             LoadImage(),
@@ -59,7 +58,12 @@ def inference(model, image_path):
             CropForeground(),
         ]
     )
-    input = test_transform(image_path)
+    return test_transform
+
+
+def inference(model, image_path):
+    transform = get_transform()
+    input = transform(image_path)
 
     model.eval()
 
@@ -85,15 +89,20 @@ def save_model(model_path, output_path):
     torch.jit.save(module, os.path.join(output_path, 'msd_heart_model.pt'))
 
 
+def save_data(array, output_filename):
+    writer = NibabelWriter()
+    writer.set_data_array(array, channel_dim=0) # remove batch dim.
+    # writer.set_metadata({"affine": torch.eye(4), "original_affine": torch.eye(4)})
+    writer.write(output_filename, verbose=True)
+
+
 def test_model(model_path, image_path, output_path):
     
     model = create_model(model_path)
     seg = inference(model, image_path)
 
-    writer = NibabelWriter()
-    writer.set_data_array(seg.squeeze(0), channel_dim=0) # remove batch dim.
-    # writer.set_metadata({"affine": torch.eye(4), "original_affine": torch.eye(4)})
-    writer.write(os.path.join(output_path, "data", "output_la_030.nii.gz"), verbose=True)
+    output_file = os.path.join(output_path, "data", "output_la_030.nii.gz")
+    save_data(seg.squeeze(0), output_file)
 
 
 if __name__ == "__main__":
@@ -103,5 +112,15 @@ if __name__ == "__main__":
     model_path = os.path.join(repo_root, "logs-202406-1610-5919/model-epoch=99-val_loss=0.0607-val_dice=0.8865.ckpt")
     save_model(model_path, repo_root)
 
+    # Save image and ground truth in transformed format for evaluation.
+    input_file = os.path.join(repo_root, "data/la_030.nii.gz")
+    transform = get_transform()
+    tformed_image = transform(input_file)
+    save_data(tformed_image, os.path.join(repo_root, "data/tformed_la_030.nii.gz"))
+
+    label_file = os.path.join(repo_root, "data/label_la_030.nii.gz")
+    tformed_label = transform(label_file)
+    save_data(tformed_label, os.path.join(repo_root, "data/tformed_label_la_030.nii.gz"))
+
     # Run inference on test data and save results.
-    test_model(model_path, os.path.join(repo_root, "data/la_030.nii.gz"), repo_root)
+    test_model(model_path, input_file, repo_root)
