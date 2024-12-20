@@ -205,7 +205,7 @@ class Net(pytorch_lightning.LightningModule):
 def main():
     print_config()
 
-    repo_root = "/Users/amithkamath/repo/monai-from-matlab"
+    repo_root = "/Users/amithkamath/repo/mathworks/monai-from-matlab"
     eventid = datetime.now().strftime('-%Y%m-%d%H-%M%S')
     log_dir = os.path.join(repo_root, "logs" + eventid)
 

@@ -85,7 +85,7 @@ def save_model(model_path, output_path):
     module = torch.jit.trace(model, example_forward_input)
 
     # Save to file: this is needed for loading into
-    # Deep Network Designer, in Method #2.
+    # Deep Network Designer.
     torch.jit.save(module, os.path.join(output_path, 'models/msd_heart_model.pt'))
 
 
@@ -104,7 +104,7 @@ def test_model(model_path, image_path, output_path):
 
 
 if __name__ == "__main__":
-    repo_root = "/Users/amithkamath/repo/monai-from-matlab/"
+    repo_root = os.path.dirname(os.path.abspath(__file__))
 
     # Save model to load with MATLAB.
     model_path = os.path.join(repo_root, "models/trained_msd_heart_model.ckpt")

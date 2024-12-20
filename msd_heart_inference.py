@@ -119,8 +119,8 @@ def inference(saved_path, data_root):
 
 if __name__ == "__main__":
 
-    repo_root = "/Users/amithkamath/repo/monai-from-matlab/"
-    data_root = "/Users/amithkamath/data/MSD/Task02_Heart"
+    repo_root = os.path.dirname(os.path.abspath(__file__))
+    data_root = "~/data/MSD/Task02_Heart"
     saved_path = os.path.join(repo_root, "models/trained_msd_heart_model.ckpt")
 
     inference(saved_path, data_root)
