@@ -121,11 +121,7 @@ if __name__ == "__main__":
 
     repo_root = os.path.dirname(os.path.abspath(__file__))
     data_root = "~/data/MSD/Task02_Heart"
-    saved_path = os.path.join(repo_root, "models/trained_msd_heart_model.ckpt")
+    saved_path = os.path.join(repo_root, 
+                 "models/trained_msd_heart_model.ckpt")
 
     inference(saved_path, data_root)
-    # [{'test_dice': metatensor([[0.9011]]), 'test_number': 1},
-    #  {'test_dice': metatensor([[0.9001]]), 'test_number': 1},
-    #  {'test_dice': metatensor([[0.9100]]), 'test_number': 1},
-    #  {'test_dice': metatensor([[0.9072]]), 'test_number': 1},
-    #  {'test_dice': metatensor([[0.9093]]), 'test_number': 1}
